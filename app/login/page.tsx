@@ -1,4 +1,7 @@
 "use client";
+
+import { signIn } from "next-auth/react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,34 +13,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { login } from "@/lib/auth";
-import { useState } from "react";
-import { useAppStore } from "@/stores/useAppStore";
-import { toast } from "sonner";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { isLoading, setLoading } = useAppStore();
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    console.log(username, password);
 
-    try {
-      setLoading(true);
-      const res = await login({ username, password });
-      console.log("Login sukses:", res);
-      toast.success("Login berhasil");
-      router.push("/dashboard");
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(`Login gagal: ${error.message}`);
-      } else {
-        toast.error("Login gagal: Terjadi kesalahan yang tidak diketahui.");
-      }
-    } finally {
-      setLoading(false);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const res = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    setLoading(false);
+
+    if (res?.ok) {
+      router.push("/dashboard"); // ganti dengan halaman tujuan kamu
+    } else {
+      alert("Email atau password salah!");
     }
   };
 
@@ -53,13 +51,13 @@ export default function LoginPage() {
         <CardContent>
           <form className="space-y-6" onSubmit={handleLogin}>
             <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="input username anda"
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
@@ -67,13 +65,13 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
               />
             </div>
-            <Button type="submit" className="w-full">
-              Masuk
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Masuk..." : "Masuk"}
             </Button>
           </form>
         </CardContent>
