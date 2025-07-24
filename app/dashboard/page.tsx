@@ -13,7 +13,7 @@ type AbsensiData = {
 
 export default function DashboardPage() {
   const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  const [input, setInput] = useState("");
   const [mode, setMode] = useState<"waiting" | "showing">("waiting");
   const [users, setUsers] = useState<AbsensiData[]>([]);
   const beepSound = useRef<HTMLAudioElement | null>(null);

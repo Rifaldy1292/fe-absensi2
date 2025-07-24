@@ -95,7 +95,7 @@ export default function AbsensiPage() {
   return (
     <>
       <div className="flex px-6 ">
-        <div className="flex items-center justify-between w-full  mb-4">
+        <div className="flex flex-wrap mt-5 gap-5 items-center justify-between w-full  mb-4">
           <h1 className="text-2xl font-bold">Data Absensi</h1>
 
           <div className="flex items-center gap-2 ">
@@ -150,9 +150,28 @@ export default function AbsensiPage() {
                     <TableCell>{item.date}</TableCell>
                     <TableCell>{item.total_hours}</TableCell>
                     <TableCell>
-                      <ul className="list-disc pl-4">
+                      <ul className="list-disc pl-4 space-y-1">
                         {item.scan_logs.map((log, i) => (
-                          <li key={i}>{log.timestamp}</li>
+                          <li
+                            key={i}
+                            className="flex items-center justify-between gap-2"
+                          >
+                            <span>{log.timestamp}</span>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => handleEditLog(log)}
+                                className="text-blue-600 hover:underline text-xs"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => handleDeleteLog(log)}
+                                className="text-red-600 hover:underline text-xs"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </li>
                         ))}
                       </ul>
                     </TableCell>
