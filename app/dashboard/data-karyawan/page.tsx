@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { getAllEmployees, deleteEmployee } from "@/lib/api/employees";
 import { ModalDeleteConfirmation } from "@/components/ModalDeleteConfirmation";
 import { toast } from "sonner";
+import { EditEmployeeModal } from "@/components/EditEmployeeModal";
 type Employee = {
   id: number;
   rfid_code: string;
@@ -79,9 +80,10 @@ export default function DataKaryawanPage() {
                   <td className="p-2 border-b">{item.position}</td>
                   <td className="p-2 border-b">{item.department}</td>
                   <td className="p-2 border-b text-center space-x-2">
-                    <Button variant="outline" size="icon">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    <EditEmployeeModal
+                      onSuccess={handleGetAllEmployees}
+                      employeeId={item.id}
+                    />
                     <Button
                       variant="destructive"
                       size="icon"

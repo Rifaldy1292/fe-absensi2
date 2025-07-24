@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { login } from "@/lib/auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "@/stores/useAppStore";
 import { toast } from "sonner";
 
@@ -20,6 +20,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const { isLoading, setLoading } = useAppStore();
   const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      router.replace("/dashboard");
+    }
+  }, []);
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log(username, password);

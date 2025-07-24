@@ -9,6 +9,14 @@ export interface CreateEmployeePayload {
   position: string;
   department: string;
 }
+export interface UpdateEmployeePayload {
+  rfid_code?: string;
+  nik?: string;
+  name?: string;
+  position?: string;
+  department?: string;
+}
+
 export const getAllEmployees = async () => {
   const res = await axios.get(baseUrl);
   return res.data;
@@ -26,10 +34,7 @@ export const createEmployee = async (data: CreateEmployeePayload) => {
 
 export const updateEmployee = async (
   id: number,
-  data: {
-    name?: string;
-    division_id?: number;
-  }
+  data: UpdateEmployeePayload
 ) => {
   const res = await axios.patch(`${baseUrl}/${id}`, data);
   return res.data;

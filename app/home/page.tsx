@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { io } from "socket.io-client";
-
+import { Button } from "@/components/ui/button";
 type AbsensiData = {
   nama: string;
   waktu: string;
@@ -62,16 +62,9 @@ export default function DashboardPage() {
 
   return (
     <div className="flex p-3 items-center w-full justify-center min-h-screen bg-muted/50">
-      <div style={{ padding: 20 }}>
-        <h1>WebSocket Absensi</h1>
-        <p>Status Socket: {connected ? "🟢 Connected" : "🔴 Disconnected"}</p>
-        <p>
-          RFID Terdeteksi: <strong>{rfid}</strong>
-        </p>
-      </div>
-
       {mode === "waiting" ? (
         <Card className="p-10 mx-auto text-center h-[500px] animate-pulse">
+          <Button className="bg-green-500">Absen Masuk</Button>
           <CardHeader>
             <CardTitle className="text-xl">Menunggu Tap Kartu...</CardTitle>
             <CardTitle className="text-xl">
@@ -84,11 +77,13 @@ export default function DashboardPage() {
             </p>
             <div className="mt-6 text-4xl">📡</div>
           </CardContent>
+          <Button variant="destructive">Absenn Pulang</Button>
         </Card>
       ) : (
         <Card className="p-6 w-[350px] text-center">
+          <Button className="bg-green-500">Absenn Masuk</Button>
           <CardHeader>
-            <CardTitle>✅ Absensi Berhasil</CardTitle>
+            <CardTitle>✅User terdeteksi</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Avatar className="mx-auto w-24 h-24">
@@ -107,6 +102,7 @@ export default function DashboardPage() {
               <StatusBadge status={user?.status ?? "hadir"} />
             </div>
           </CardContent>
+          <Button variant="destructive">Absenn Pulang</Button>
         </Card>
       )}
     </div>
