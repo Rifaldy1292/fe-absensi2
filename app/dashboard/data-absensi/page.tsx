@@ -157,7 +157,7 @@ export default function AbsensiPage() {
                             className="flex items-center justify-between gap-2"
                           >
                             <span>{log.timestamp}</span>
-                            <div className="flex gap-1">
+                            {/* <div className="flex gap-1">
                               <button
                                 onClick={() => handleEditLog(log)}
                                 className="text-blue-600 hover:underline text-xs"
@@ -170,7 +170,7 @@ export default function AbsensiPage() {
                               >
                                 🗑️
                               </button>
-                            </div>
+                            </div> */}
                           </li>
                         ))}
                       </ul>
