@@ -24,3 +24,7 @@ export const getAttendanceById = async (id: number) => {
   const res = await axios.get(`/attendance/${id}`);
   return res.data;
 };
+export const createAttendance = async (data: any) => {
+  const res = await axios.post("/attendance", data);
+  return res.data;
+};

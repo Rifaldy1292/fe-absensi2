@@ -1,0 +1,47 @@
+// components/HiddenRFIDInput.tsx
+import { useEffect, useRef } from "react";
+
+interface Props {
+  onScan: (tag: number) => void;
+}
+
+export default function HiddenRFIDInput({ onScan }: Props) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const focus = () => inputRef.current?.focus();
+    focus();
+
+    const input = inputRef.current;
+    input?.addEventListener("blur", focus);
+
+    return () => input?.removeEventListener("blur", focus);
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      const tag = parseInt(e.currentTarget.value.trim(), 10);
+      e.preventDefault();
+      if (tag) {
+        onScan(tag);
+      }
+      e.currentTarget.value = "";
+    }
+  };
+  return (
+    <input
+      ref={inputRef}
+      onKeyDown={handleKeyDown}
+      className="bg-amber-500 text-black px-2 py-1"
+      inputMode="none"
+      style={{
+        position: "fixed",
+        top: 20,
+        left: 20,
+        opacity: 1,
+        zIndex: 9999,
+        pointerEvents: "auto", // <== biar bisa diklik manual juga
+      }}
+    />
+  );
+}

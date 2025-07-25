@@ -27,6 +27,7 @@ type MyModalProps = {
 };
 
 export function EditEmployeeModal({ employeeId, onSuccess }: MyModalProps) {
+  console.log("RFID Input mounted");
   const [form, setForm] = useState({
     rfid_code: "",
     nik: "",

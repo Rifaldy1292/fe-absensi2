@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { sendScanLog } from "@/lib/api/scanLogs";
+import { createAttendance } from "@/lib/api/attendance";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -16,17 +16,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
+import HiddenRFIDInput from "@/components/InputRfidHidden";
+import { getEmployeeById } from "@/lib/api/employees";
 type AbsensiData = {
-  nama: string;
-  waktu: string;
-  foto: string;
-  status: "hadir" | "telat" | "pulang";
+  id: number;
+  name: string;
+  nik: string;
+  position: string;
+  department: string;
+  rfid_code: number;
+  createdAt: string;
 };
 
 export default function DashboardPage() {
-  const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [mode, setMode] = useState<"waiting" | "showing">("waiting");
   const [users, setUsers] = useState<AbsensiData[]>([]);
   const beepSound = useRef<HTMLAudioElement | null>(null);
@@ -35,85 +38,93 @@ export default function DashboardPage() {
     beepSound.current = new Audio("/beep-329314.mp3");
   }, []);
 
-  const handleCardTap = (data: AbsensiData) => {
-    const isAlreadyPresent = users.some((user) => user.nama === data.nama);
-    if (isAlreadyPresent) {
-      console.log(`[SKIP] ${data.nama} sudah ditampilkan.`);
-      return;
+  const handleScan = async (rfid: number) => {
+    console.log("Tag dari _app:", rfid);
+    try {
+      const res = await getEmployeeById(rfid);
+      console.log("Data karyawan:", res);
+      if (res) {
+        setUsers((prev) => {
+          const alreadyExists = prev.some(
+            (user) => user.rfid_code === res.rfid_code
+          );
+          if (alreadyExists) return prev;
+          return [...prev, res];
+        });
+        setMode("showing");
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+
+        // ⏳ Set timer 5 detik untuk reset state
+        timeoutRef.current = setTimeout(() => {
+          setUsers([]);
+          setMode("waiting");
+        }, 5000);
+      }
+    } catch (error) {
+      console.error("Gagal ambil data karyawan:", error);
     }
-
-    beepSound.current?.play();
-
-    setUsers((prev) => [...prev, data]);
-    setMode("showing");
   };
 
-  const handleAbsen = (status: "hadir" | "pulang") => {
-    if (users.length === 0) {
-      toast.error("Belum ada user yang discan.");
-      return;
-    }
+  const handleSendAttendance = async (
+    rfid_code: number,
+    status: "in" | "out"
+  ) => {
+    try {
+      const payload = {
+        rfid_code,
+        status,
+      };
 
-    Promise.all(
-      users.map((user) => {
-        const dataToSend = {
-          nama: user.nama,
-          waktu: new Date().toISOString(),
+      const res = await createAttendance(payload);
+
+      console.log("Absensi berhasil dikirim:", res);
+      // bisa munculkan toast, update UI, dll
+    } catch (error) {
+      console.error("Gagal kirim absensi:", error);
+      // bisa munculkan toast error
+    }
+  };
+  const handleBulkAttendance = async (status: "in" | "out") => {
+    for (const user of users) {
+      try {
+        await createAttendance({
+          employee_id: user.id,
           status,
-        };
-        return sendScanLog(dataToSend);
-      })
-    )
-      .then(() => {
-        toast.success(`Berhasil absen ${status} untuk ${users.length} orang`);
-      })
-      .catch((err) => {
-        console.error(err);
-        toast.error("Gagal mengirim data absensi.");
-      })
-      .finally(() => {
-        setUsers([]); // akan jalan selalu, baik berhasil/gagal
-        setMode("waiting");
-      });
+        });
+
+        console.log(`Absensi sukses untuk ${user.name}`);
+
+        toast.success(
+          <div>
+            <p className="font-semibold">Absensi sukses</p>
+            <p className="text-sm text-muted-foreground">
+              Berhasil absen untuk {user.name}
+            </p>
+          </div>
+        );
+      } catch (error) {
+        console.error(`Gagal absen ${user.name}`, error);
+
+        toast.error(
+          <div>
+            <p className="font-semibold">Gagal absen</p>
+            <p className="text-sm text-muted-foreground">
+              Terjadi kesalahan saat absen {user.name}
+            </p>
+          </div>
+        );
+      }
+    }
+
+    // Setelah selesai semua
+    setUsers([]);
+    setMode("waiting");
   };
-
-  const simulateMultipleScans = () => {
-    const dummyUsers: AbsensiData[] = [
-      {
-        nama: "Alice",
-        waktu: new Date().toLocaleTimeString(),
-        foto: "/foto-default.jpg",
-        status: "hadir",
-      },
-      {
-        nama: "Bob",
-        waktu: new Date().toLocaleTimeString(),
-        foto: "/foto-default.jpg",
-        status: "telat",
-      },
-      {
-        nama: "Charlie",
-        waktu: new Date().toLocaleTimeString(),
-        foto: "/foto-default.jpg",
-        status: "pulang",
-      },
-      {
-        nama: "Diana",
-        waktu: new Date().toLocaleTimeString(),
-        foto: "/foto-default.jpg",
-        status: "hadir",
-      },
-    ];
-
-    dummyUsers.forEach((userData, index) => {
-      setTimeout(() => {
-        handleCardTap(userData);
-      }, index * 100);
-    });
-  };
-
   return (
     <div className="flex p-3 items-center w-full justify-center min-h-screen bg-muted/50 relative">
+      <HiddenRFIDInput onScan={handleScan} />
       {mode === "waiting" ? (
         <Card className="p-10 mx-auto text-center h-[500px] animate-pulse">
           <CardHeader>
@@ -142,7 +153,7 @@ export default function DashboardPage() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Batal</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleAbsen("pulang")}>
+                <AlertDialogAction onClick={() => handleBulkAttendance("out")}>
                   Ya, Absen Pulang
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -152,14 +163,33 @@ export default function DashboardPage() {
           {/* 🧍 List User */}
           <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {users.map((user, idx) => (
-              <div key={idx} className="space-y-2">
+              <div key={idx} className="space-y-2 relative border p-2 rounded">
+                {/* Tombol silang pojok kanan atas */}
+                <button
+                  onClick={() =>
+                    setUsers((prev) =>
+                      prev.filter((u) => u.rfid_code !== user.rfid_code)
+                    )
+                  }
+                  className="absolute top-1 right-1 text-red-500 hover:text-red-700 text-sm"
+                >
+                  ❌
+                </button>
+
                 <Avatar className="w-16 h-16 mx-auto">
-                  <AvatarImage src={user.foto} alt={user.nama} />
-                  <AvatarFallback>{user.nama.charAt(0)}</AvatarFallback>
+                  <AvatarImage alt={user.name} />
+                  <AvatarFallback>{user.nik.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <p className="text-sm font-semibold">{user.nama}</p>
-                <p className="text-xs text-muted-foreground">{user.waktu}</p>
-                <StatusBadge status={user.status} />
+
+                <p className="text-sm font-semibold">{user.name}</p>
+
+                <p className="text-sm font-semibold">
+                  {new Date().toLocaleString()}
+                </p>
+
+                <p className="text-xs text-muted-foreground"></p>
+
+                <StatusBadge status={user.rfid_code} />
               </div>
             ))}
           </CardContent>
@@ -178,7 +208,7 @@ export default function DashboardPage() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Batal</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleAbsen("hadir")}>
+                <AlertDialogAction onClick={() => handleBulkAttendance("in")}>
                   Ya, Absen Masuk
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -186,45 +216,29 @@ export default function DashboardPage() {
           </AlertDialog>
         </Card>
       )}
-
-      {/* Tombol Tes Manual */}
+      {/* Tombol Tes Manual
       <div className="fixed bottom-4 right-4 flex flex-col gap-2">
         <button
-          onClick={() =>
-            handleCardTap({
-              nama: "Tes Manual",
-              waktu: new Date().toLocaleTimeString(),
-              foto: "/foto-default.jpg",
-              status: "hadir",
-            })
-          }
+          onClick={() => simulateTyping("123456789")}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow"
         >
           Tes Scan Manual
         </button>
 
-        <button
-          onClick={simulateMultipleScans}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 shadow"
-        >
+        <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 shadow">
           Tes Scan 4 Orang
         </button>
-      </div>
+      </div> */}
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: "hadir" | "telat" | "pulang" }) {
-  const colorMap = {
-    hadir: "bg-green-500",
-    telat: "bg-yellow-500",
-    pulang: "bg-gray-500",
-  };
+function StatusBadge({ status }: { status: number }) {
   return (
     <span
-      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-white text-xs ${colorMap[status]}`}
+      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-white text-xs bg-green-400`}
     >
-      {status.toUpperCase()}
+      {status}
     </span>
   );
 }

@@ -4,7 +4,7 @@ import axios from "axios";
 export type ScanLogData = {
   nama: string;
   waktu: string;
-  status: "hadir" | "telat" | "pulang";
+  status: "in | out";
 };
 
 export function sendScanLog(data: ScanLogData) {

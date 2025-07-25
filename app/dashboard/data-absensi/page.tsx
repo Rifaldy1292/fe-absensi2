@@ -21,6 +21,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { getAllAttendance } from "@/lib/api/attendance";
 import { exportToExcel } from "@/utils/exportToExcel";
+import {
+  getDailyAttendance,
+  getWeeklyAttendance,
+  getMonthlyAttendance,
+} from "@/lib/api/attendance";
 
 type Employee = {
   id: number;
@@ -56,42 +61,36 @@ export default function AbsensiPage() {
     "harian"
   );
   const [attendance, setAttendance] = useState<Attendance[]>([]);
-  const [filteredData, setFilteredData] = useState<Attendance[]>([]);
-  const handleGetAllAttendance = async () => {
+  const getAttendanceByFilter = async (
+    filter: "harian" | "mingguan" | "bulanan"
+  ) => {
+    switch (filter) {
+      case "harian":
+        return await getDailyAttendance();
+      case "mingguan":
+        return await getWeeklyAttendance();
+      case "bulanan":
+        return await getMonthlyAttendance();
+      default:
+        return await getAllAttendance();
+    }
+  };
+
+  const handleGetAttendance = async (
+    filter: "harian" | "mingguan" | "bulanan"
+  ) => {
     try {
-      const res = await getAllAttendance();
+      const res = await getAttendanceByFilter(filter); // API baru berdasarkan filter
       setAttendance(res);
-      console.log(res);
     } catch (error) {
       console.error(error);
     }
   };
+
   useEffect(() => {
-    const today = new Date();
-    const filtered = attendance.filter((item) => {
-      const tanggalItem = new Date(item.date);
-
-      if (filter === "harian") {
-        return tanggalItem.toDateString() === today.toDateString();
-      } else if (filter === "mingguan") {
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(today.getDate() - 7);
-        return tanggalItem >= oneWeekAgo && tanggalItem <= today;
-      } else if (filter === "bulanan") {
-        return (
-          tanggalItem.getMonth() === today.getMonth() &&
-          tanggalItem.getFullYear() === today.getFullYear()
-        );
-      }
-
-      return true;
-    });
-
-    setFilteredData(filtered);
+    handleGetAttendance(filter); // panggil ulang saat filter berubah
   }, [filter]);
-  useEffect(() => {
-    handleGetAllAttendance();
-  }, []);
+
   return (
     <>
       <div className="flex px-6 ">
@@ -99,7 +98,7 @@ export default function AbsensiPage() {
           <h1 className="text-2xl font-bold">Data Absensi</h1>
 
           <div className="flex items-center gap-2 ">
-            <Button onClick={() => exportToExcel(filteredData)}>
+            <Button onClick={() => exportToExcel(attendance)}>
               Export to exel
             </Button>
             <Label>Pilih Filter:</Label>
@@ -137,40 +136,26 @@ export default function AbsensiPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.length > 0 ? (
-                filteredData.map((item, index) => (
+              {attendance.length > 0 ? (
+                attendance.map((item, index) => (
                   <TableRow key={index}>
-                    <TableCell>{item.employee.rfid_code}</TableCell>
-                    <TableCell>{item.employee.nik}</TableCell>
-                    <TableCell>{item.employee.name}</TableCell>
-                    <TableCell>{item.employee.position}</TableCell>
-                    <TableCell>{item.employee.department}</TableCell>
+                    <TableCell>{item.employee?.rfid_code}</TableCell>
+                    <TableCell>{item.employee?.nik}</TableCell>
+                    <TableCell>{item.employee?.name}</TableCell>
+                    <TableCell>{item.employee?.position}</TableCell>
+                    <TableCell>{item.employee?.department}</TableCell>
                     <TableCell>{item.time_in}</TableCell>
                     <TableCell>{item.time_out}</TableCell>
                     <TableCell>{item.date}</TableCell>
                     <TableCell>{item.total_hours}</TableCell>
                     <TableCell>
                       <ul className="list-disc pl-4 space-y-1">
-                        {item.scan_logs.map((log, i) => (
+                        {item?.scan_logs?.map((log, i) => (
                           <li
                             key={i}
                             className="flex items-center justify-between gap-2"
                           >
                             <span>{log.timestamp}</span>
-                            {/* <div className="flex gap-1">
-                              <button
-                                onClick={() => handleEditLog(log)}
-                                className="text-blue-600 hover:underline text-xs"
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                onClick={() => handleDeleteLog(log)}
-                                className="text-red-600 hover:underline text-xs"
-                              >
-                                🗑️
-                              </button>
-                            </div> */}
                           </li>
                         ))}
                       </ul>
@@ -180,7 +165,7 @@ export default function AbsensiPage() {
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={10}
                     className="text-center text-muted-foreground"
                   >
                     Tidak ada data
