@@ -154,7 +154,7 @@ export default function AbsensiPage() {
                     <TableCell>
                       {item.date ? formatToJakartaDate(item.date) : "-"}
                     </TableCell>
-                    <TableCell>{item.total_hours}</TableCell>
+                    <TableCell>{item.total_hours} Jam</TableCell>
                     <TableCell>
                       <ul className="list-disc pl-4 space-y-1">
                         {item?.scan_logs?.map((log, i) => (

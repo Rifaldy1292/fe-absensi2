@@ -22,7 +22,7 @@ export const getAllEmployees = async () => {
   return res.data;
 };
 
-export const getEmployeeById = async (id: number) => {
+export const getEmployeeById = async (id: string) => {
   const res = await axios.get(`${baseUrl}/${id}`);
   return res.data;
 };

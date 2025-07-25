@@ -38,7 +38,7 @@ export default function DashboardPage() {
     beepSound.current = new Audio("/beep-329314.mp3");
   }, []);
 
-  const handleScan = async (rfid: number) => {
+  const handleScan = async (rfid: string) => {
     console.log("Tag dari _app:", rfid);
     try {
       const res = await getEmployeeById(rfid);
@@ -67,25 +67,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleSendAttendance = async (
-    rfid_code: number,
-    status: "in" | "out"
-  ) => {
-    try {
-      const payload = {
-        rfid_code,
-        status,
-      };
-
-      const res = await createAttendance(payload);
-
-      console.log("Absensi berhasil dikirim:", res);
-      // bisa munculkan toast, update UI, dll
-    } catch (error) {
-      console.error("Gagal kirim absensi:", error);
-      // bisa munculkan toast error
-    }
-  };
   const handleBulkAttendance = async (status: "in" | "out") => {
     for (const user of users) {
       try {
@@ -236,7 +217,7 @@ export default function DashboardPage() {
 function StatusBadge({ status }: { status: number }) {
   return (
     <span
-      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-white text-xs bg-green-400`}
+      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-white text-xs bg-green-400 break-words max-w-[100px]`}
     >
       {status}
     </span>

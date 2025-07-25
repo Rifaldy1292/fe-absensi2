@@ -2,7 +2,7 @@
 import { useEffect, useRef } from "react";
 
 interface Props {
-  onScan: (tag: number) => void;
+  onScan: (tag: string) => void;
 }
 
 export default function HiddenRFIDInput({ onScan }: Props) {
@@ -20,7 +20,7 @@ export default function HiddenRFIDInput({ onScan }: Props) {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      const tag = parseInt(e.currentTarget.value.trim(), 10);
+      const tag = e.currentTarget.value;
       e.preventDefault();
       if (tag) {
         onScan(tag);

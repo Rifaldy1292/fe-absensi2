@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner"; // buat notifikasi manis
 import { createEmployee, CreateEmployeePayload } from "@/lib/api/employees";
-
+import { useRef } from "react";
 type MyModalProps = {
   onSuccess: () => void;
 };
@@ -28,7 +28,7 @@ export function AddEmployeeModal({ onSuccess }: MyModalProps) {
     position: "",
     department: "",
   });
-
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +81,7 @@ export function AddEmployeeModal({ onSuccess }: MyModalProps) {
             { label: "Nama Lengkap", name: "name" },
             { label: "Jabatan", name: "position" },
             { label: "Departemen", name: "department" },
-          ].map((field) => (
+          ].map((field, index) => (
             <div key={field.name} className="grid gap-2">
               <Label htmlFor={field.name}>{field.label}</Label>
               <Input
@@ -89,10 +89,20 @@ export function AddEmployeeModal({ onSuccess }: MyModalProps) {
                 name={field.name}
                 value={(form as any)[field.name]}
                 onChange={handleChange}
+                ref={(el) => {
+                  inputRefs.current[index] = el;
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    inputRefs.current[index + 1]?.focus();
+                  }
+                }}
               />
             </div>
           ))}
         </div>
+
         <DialogFooter>
           <DialogClose asChild>
             <Button onClick={handleSubmit} disabled={loading}>
