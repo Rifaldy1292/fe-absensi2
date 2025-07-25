@@ -1,7 +1,7 @@
 // utils/exportToExcel.ts
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-
+import { formatToJakartaFullDateTime } from "@/utils/formatTimes";
 type Employee = {
   id: number;
   rfid_code: string;
@@ -37,12 +37,17 @@ export function exportToExcel(data: Attendance[]) {
     Nama: item.employee.name,
     Jabatan: item.employee.position,
     Bagian: item.employee.department,
-    "Jam Masuk": item.time_in,
-    "Jam Pulang": item.time_out,
-    Tanggal: item.date,
-    "Total Jam": item.total_hours,
+    "Jam Masuk": formatToJakartaFullDateTime(item.time_in),
+    "Jam Pulang": formatToJakartaFullDateTime(item.time_out),
+    Tanggal: formatToJakartaFullDateTime(item.date),
+    "Total Jam": item.total_hours ?? "-",
     "Log Scan": item.scan_logs
-      .map((log) => `${log.scan_type} @ ${log.timestamp}`)
+      .map(
+        (log) =>
+          `${log.scan_type.toUpperCase()} @ ${formatToJakartaFullDateTime(
+            log.timestamp
+          )}`
+      )
       .join(", "),
   }));
 
