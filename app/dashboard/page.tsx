@@ -1,162 +1,193 @@
 "use client";
-import { toast } from "sonner";
-import { useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { sendScanLog } from "@/lib/api/scanLogs";
-type AbsensiData = {
-  nama: string;
-  waktu: string;
-  foto: string;
-  status: "hadir" | "telat" | "pulang";
+
+import { useState, useEffect } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { getAllAttendance } from "@/lib/api/attendance";
+import { exportToExcel } from "@/utils/exportToExcel";
+import {
+  getDailyAttendance,
+  getWeeklyAttendance,
+  getMonthlyAttendance,
+} from "@/lib/api/attendance";
+import { formatToJakartaTime, formatToJakartaDate } from "@/utils/formatTimes";
+
+type Employee = {
+  id: number;
+  rfid_code: string;
+  nik: string;
+  name: string;
+  position: string;
+  department: string;
+  createdAt: string;
+};
+type ScanLog = {
+  id: number;
+  employee_id: number;
+  attendance_id: number;
+  timestamp: string;
+  scan_type: "in" | "out";
 };
 
-export default function DashboardPage() {
-  const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [input, setInput] = useState("");
-  const [mode, setMode] = useState<"waiting" | "showing">("waiting");
-  const [users, setUsers] = useState<AbsensiData[]>([]);
-  const beepSound = useRef<HTMLAudioElement | null>(null);
+type Attendance = {
+  id: number;
+  employee_id: number;
+  date: string;
+  time_in: string | null;
+  time_out: string | null;
+  total_hours: string | null;
+  createdAt: string;
+  employee: Employee;
+  scan_logs: ScanLog[];
+};
+
+export default function AbsensiPage() {
+  const [filter, setFilter] = useState<"harian" | "mingguan" | "bulanan">(
+    "harian"
+  );
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const getAttendanceByFilter = async (
+    filter: "harian" | "mingguan" | "bulanan"
+  ) => {
+    switch (filter) {
+      case "harian":
+        return await getDailyAttendance();
+      case "mingguan":
+        return await getWeeklyAttendance();
+      case "bulanan":
+        return await getMonthlyAttendance();
+      default:
+        return await getAllAttendance();
+    }
+  };
+
+  const handleGetAttendance = async (
+    filter: "harian" | "mingguan" | "bulanan"
+  ) => {
+    try {
+      const res = await getAttendanceByFilter(filter); // API baru berdasarkan filter
+      setAttendance(res);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   useEffect(() => {
-    beepSound.current = new Audio("/beep-329314.mp3");
-  }, []);
-
-  const handleCardTap = (data: AbsensiData) => {
-    // Cek apakah nama yang sama sudah ada dalam daftar tampilan
-    const isAlreadyPresent = users.some((user) => user.nama === data.nama);
-    if (isAlreadyPresent) {
-      console.log(`[SKIP] ${data.nama} sudah ditampilkan.`);
-      return;
-    }
-
-    // Play suara beep
-    beepSound.current?.play();
-
-    setUsers((prev) => [...prev, data]);
-    setMode("showing");
-    setTimeout(() => {
-      sendScanLog({
-        nama: data.nama,
-        waktu: data.waktu,
-        status: data.status,
-      })
-        .then((res) => {
-          console.log("Berhasil kirim log:", res?.data || res);
-          toast.success(`Absensi ${data.nama} berhasil`);
-        })
-        .catch((err) => {
-          console.error("Gagal kirim log:", err);
-          toast.error(`Gagal kirim log untuk ${data.nama}`);
-        });
-    }, 2000);
-    // Reset tampilan setelah 5 detik
-    // Clear timeout sebelumnya kalau ada
-    if (resetTimeoutRef.current) {
-      clearTimeout(resetTimeoutRef.current);
-    }
-
-    // Set timeout baru untuk reset tampilan setelah 5 detik dari scan terakhir
-    resetTimeoutRef.current = setTimeout(() => {
-      setMode("waiting");
-      setUsers([]);
-    }, 5000);
-  };
-
-  const simulateMultipleScans = () => {
-    const dummyUsers: AbsensiData[] = [
-      {
-        nama: "Alice",
-        waktu: new Date().toLocaleTimeString(),
-        foto: "/foto-default.jpg",
-        status: "hadir",
-      },
-      {
-        nama: "Bob",
-        waktu: new Date().toLocaleTimeString(),
-        foto: "/foto-default.jpg",
-        status: "telat",
-      },
-      {
-        nama: "Charlie",
-        waktu: new Date().toLocaleTimeString(),
-        foto: "/foto-default.jpg",
-        status: "pulang",
-      },
-      {
-        nama: "Diana",
-        waktu: new Date().toLocaleTimeString(),
-        foto: "/foto-default.jpg",
-        status: "hadir",
-      },
-    ];
-
-    dummyUsers.forEach((userData, index) => {
-      setTimeout(() => {
-        handleCardTap(userData);
-      }, index * 100);
-    });
-  };
+    handleGetAttendance(filter); // panggil ulang saat filter berubah
+  }, [filter]);
 
   return (
-    <div className="flex p-3 items-center w-full justify-center min-h-screen bg-muted/50 relative">
-      {mode === "waiting" ? (
-        <Card className="p-10 mx-auto text-center h-[500px] animate-pulse">
-          <CardHeader>
-            <CardTitle className="text-xl">Menunggu Tap Kartu...</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Silakan tap kartu di alat untuk absensi
-            </p>
-            <div className="mt-6 text-4xl">📡</div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="p-6 w-full max-w-2xl text-center">
-          <CardHeader>
-            <CardTitle>✅ Absensi Berhasil</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {users.map((user, idx) => (
-              <div key={idx} className="space-y-2">
-                <Avatar className="w-16 h-16 mx-auto">
-                  <AvatarImage src={user.foto} alt={user.nama} />
-                  <AvatarFallback>{user.nama.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <p className="text-sm font-semibold">{user.nama}</p>
-                <p className="text-xs text-muted-foreground">{user.waktu}</p>
-                <StatusBadge status={user.status} />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+    <>
+      <div className="flex px-6 ">
+        <div className="flex flex-wrap mt-5 gap-5 items-center justify-between w-full  mb-4">
+          <h1 className="text-2xl font-bold">Data Absensi</h1>
 
-      {/* Tombol Tes Manual */}
-      <div className="fixed bottom-4 right-4 flex flex-col gap-2">
-        <button
-          onClick={() =>
-            handleCardTap({
-              nama: "Tes Manual",
-              waktu: new Date().toLocaleTimeString(),
-              foto: "/foto-default.jpg",
-              status: "hadir",
-            })
-          }
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow"
-        >
-          Tes Scan Manual
-        </button>
-
-        <button
-          onClick={simulateMultipleScans}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 shadow"
-        >
-          Tes Scan 4 Orang
-        </button>
+          <div className="flex items-center gap-2 ">
+            <Button onClick={() => exportToExcel(attendance)}>
+              Export to exel
+            </Button>
+            <Label>Pilih Filter:</Label>
+            <Select
+              value={filter}
+              onValueChange={(val) => setFilter(val as any)}
+            >
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="harian">Harian</SelectItem>
+                <SelectItem value="mingguan">Mingguan</SelectItem>
+                <SelectItem value="bulanan">Bulanan</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
-    </div>
+      <div className="p-6">
+        <Card className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>RFID</TableHead>
+                <TableHead>NIk</TableHead>
+                <TableHead>Nama</TableHead>
+                <TableHead>Jabatan</TableHead>
+                <TableHead>Bagian</TableHead>
+                <TableHead>Jam in</TableHead>
+                <TableHead>Jam out</TableHead>
+                <TableHead>Tanggal</TableHead>
+                <TableHead>Jam kerja</TableHead>
+                <TableHead>History in out</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {attendance.length > 0 ? (
+                attendance.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{item.employee?.rfid_code}</TableCell>
+                    <TableCell>{item.employee?.nik}</TableCell>
+                    <TableCell>{item.employee?.name}</TableCell>
+                    <TableCell>{item.employee?.position}</TableCell>
+                    <TableCell>{item.employee?.department}</TableCell>
+                    <TableCell>
+                      {item.time_in ? formatToJakartaTime(item.time_in) : "-"}
+                    </TableCell>
+                    <TableCell>
+                      {item.time_out ? formatToJakartaTime(item.time_out) : "-"}
+                    </TableCell>
+                    <TableCell>
+                      {item.date ? formatToJakartaDate(item.date) : "-"}
+                    </TableCell>
+                    <TableCell>{item.total_hours}</TableCell>
+                    <TableCell>
+                      <ul className="list-disc pl-4 space-y-1">
+                        {item?.scan_logs?.map((log, i) => (
+                          <li
+                            key={i}
+                            className="flex items-center justify-between gap-2"
+                          >
+                            <span>
+                              {log.timestamp
+                                ? formatToJakartaTime(log.timestamp)
+                                : "-"}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={10}
+                    className="text-center text-muted-foreground"
+                  >
+                    Tidak ada data
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      </div>
+    </>
   );
 }
 
@@ -168,7 +199,7 @@ function StatusBadge({ status }: { status: "hadir" | "telat" | "pulang" }) {
   };
   return (
     <span
-      className={`inline-block mt-1 px-2 py-0.5 rounded-full text-white text-xs ${colorMap[status]}`}
+      className={`inline-block px-3 py-1 rounded-full text-white text-sm ${colorMap[status]}`}
     >
       {status.toUpperCase()}
     </span>

@@ -20,11 +20,11 @@ const items = [
     url: "/dashboard",
     icon: Home,
   },
-  {
-    title: "Data Absensi",
-    url: "/dashboard/data-absensi",
-    icon: Inbox,
-  },
+  // {
+  //   title: "Data Absensi",
+  //   url: "/dashboard/data-absensi",
+  //   icon: Inbox,
+  // },
   {
     title: "Data Karyawan",
     url: "/dashboard/data-karyawan",
