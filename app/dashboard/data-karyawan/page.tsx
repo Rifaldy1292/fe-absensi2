@@ -51,14 +51,14 @@ export default function DataKaryawanPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <Card>
+      <Card className="overflow-x-auto">
         <CardHeader>
           <div className="flex justify-between">
             <CardTitle>Data Karyawan</CardTitle>
             <AddEmployeeModal onSuccess={handleGetAllEmployees} />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto p-0">
           <table className="min-w-full text-sm border rounded overflow-hidden">
             <thead>
               <tr className="bg-muted text-left">
@@ -81,6 +81,7 @@ export default function DataKaryawanPage() {
                   <td className="p-2 border-b">{item.department}</td>
                   <td className="p-2 border-b text-center space-x-2">
                     <EditEmployeeModal
+                      rfid_code={item.rfid_code}
                       onSuccess={handleGetAllEmployees}
                       employeeId={item.id}
                     />

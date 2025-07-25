@@ -29,19 +29,28 @@ export default function HiddenRFIDInput({ onScan }: Props) {
     }
   };
   return (
-    <input
-      ref={inputRef}
-      onKeyDown={handleKeyDown}
-      className="bg-amber-500 text-black px-2 py-1"
-      inputMode="none"
-      style={{
-        position: "fixed",
-        top: 20,
-        left: 20,
-        opacity: 1,
-        zIndex: 9999,
-        pointerEvents: "auto", // <== biar bisa diklik manual juga
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const tag = inputRef.current?.value;
+        if (tag) onScan(tag);
+        if (inputRef.current) inputRef.current.value = "";
       }}
-    />
+    >
+      <input
+        ref={inputRef}
+        onKeyDown={handleKeyDown}
+        className="bg-amber-500 text-black px-2 py-1"
+        inputMode="none"
+        style={{
+          position: "fixed",
+          top: 20,
+          left: 20,
+          opacity: 1,
+          zIndex: 9999,
+          pointerEvents: "auto",
+        }}
+      />
+    </form>
   );
 }

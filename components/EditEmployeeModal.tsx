@@ -24,9 +24,14 @@ import { Pencil } from "lucide-react";
 type MyModalProps = {
   employeeId: number;
   onSuccess: () => void;
+  rfid_code: string;
 };
 
-export function EditEmployeeModal({ employeeId, onSuccess }: MyModalProps) {
+export function EditEmployeeModal({
+  employeeId,
+  onSuccess,
+  rfid_code,
+}: MyModalProps) {
   console.log("RFID Input mounted");
   const [form, setForm] = useState({
     rfid_code: "",
@@ -43,7 +48,7 @@ export function EditEmployeeModal({ employeeId, onSuccess }: MyModalProps) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleGetEmployeeById = async (id: number) => {
+  const handleGetEmployeeById = async (id: string) => {
     try {
       const res = await getEmployeeById(id);
       setForm({
@@ -61,7 +66,7 @@ export function EditEmployeeModal({ employeeId, onSuccess }: MyModalProps) {
   // ⏰ Trigger fetch saat modal dibuka
   useEffect(() => {
     if (open) {
-      handleGetEmployeeById(employeeId);
+      handleGetEmployeeById(rfid_code);
     }
   }, [open, employeeId]);
 
