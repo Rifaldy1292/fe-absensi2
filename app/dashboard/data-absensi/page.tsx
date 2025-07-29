@@ -26,6 +26,7 @@ import {
   getWeeklyAttendance,
   getMonthlyAttendance,
 } from "@/lib/api/attendance";
+import socket from "@/lib/socket";
 
 type Employee = {
   id: number;
@@ -57,10 +58,12 @@ type Attendance = {
 };
 
 export default function AbsensiPage() {
+  const [isConnected, setIsConnected] = useState(false);
   const [filter, setFilter] = useState<"harian" | "mingguan" | "bulanan">(
     "harian"
   );
   const [attendance, setAttendance] = useState<Attendance[]>([]);
+
   const getAttendanceByFilter = async (
     filter: "harian" | "mingguan" | "bulanan"
   ) => {
@@ -86,6 +89,30 @@ export default function AbsensiPage() {
       console.error(error);
     }
   };
+  useEffect(() => {
+    socket.connect();
+
+    // === Listener koneksi ===
+    const handleConnect = () => setIsConnected(true);
+    const handleDisconnect = () => setIsConnected(false);
+
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+
+    // === Listener event log_update dari backend ===
+    const onLogUpdate = async () => {
+      console.log("log_update");
+      await handleGetAttendance(filter); // Pastikan filter disimpan atau pakai useRef
+    };
+    socket.on("updateLogNotification", onLogUpdate);
+
+    return () => {
+      socket.off("log_update", onLogUpdate);
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.disconnect(); // optional kalau socket hanya untuk page ini
+    };
+  }, []);
 
   useEffect(() => {
     handleGetAttendance(filter); // panggil ulang saat filter berubah
@@ -132,7 +159,8 @@ export default function AbsensiPage() {
                 <TableHead>Jam out</TableHead>
                 <TableHead>Tanggal</TableHead>
                 <TableHead>Jam kerja</TableHead>
-                <TableHead>History in out</TableHead>
+                <TableHead>Histori in </TableHead>
+                <TableHead>Histori out</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
