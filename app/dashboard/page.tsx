@@ -57,7 +57,7 @@ type Attendance = {
   scan_logs: ScanLog[];
 };
 
-export default function AbsensiPage(refetch: () => void) {
+export default function AbsensiPage() {
   const [filter, setFilter] = useState<"harian" | "mingguan" | "bulanan">(
     "harian"
   );
